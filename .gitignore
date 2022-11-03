@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+/cmake-build-debug/
+/binary/
+/.idea/
+*.Target.json
+*_API.h
