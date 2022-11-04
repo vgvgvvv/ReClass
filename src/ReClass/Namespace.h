@@ -1,0 +1,7 @@
+#pragma
+
+class Namespace
+{
+public:
+
+};
