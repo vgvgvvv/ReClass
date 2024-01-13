@@ -1,7 +1,7 @@
 #pragma once
 #include "ReClassPrefix.h"
-#include "TemplateUtility.h"
 #include "ReClassContext.h"
+#include "ReClass/Private/TemplateUtility.h"
 
 namespace ReClassSystem
 {
@@ -160,16 +160,22 @@ namespace ReClassSystem
 		RECLASS_NO_DISCARD SharedPtr<T> Create() const;
 		template<class T>
 		RECLASS_NO_DISCARD T* CreateRaw() const;
-		template<class T>
+
+		template<typename T>
 		class InternalClassDeleter
 		{
 		public:
-			InternalClassDeleter() = default;
+			explicit InternalClassDeleter(Function<void(void*)>& deleter)
+				: Deleter(deleter)
+			{
+			}
 			void operator()(T* Obj) const
 			{
-				delete T::RECLASS_STATIC_CLASS_FUNCNAME().Dest(Obj);
+				Deleter(Obj);
 			}
+			Function<void(void*)>& Deleter;
 		};
+
 		template<typename T>
 		UniquePtr<T> CreateUnique() const;
 		template<typename T>
@@ -233,7 +239,7 @@ namespace ReClassSystem
 		int32 InSize,
 		Function<InternalClassInfo()> InBaseClassGetter,
 		const char* InName,
-		EClassFlag InFlag = EClassFlag::None,
+		EClassFlag InFlag,
 		TemplateArgument* InTemplateArgs,
 		TemplateArgument* InTemplateArgsEnd)
 			: Class(

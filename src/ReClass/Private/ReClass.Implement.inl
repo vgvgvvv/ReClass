@@ -10,9 +10,9 @@
 			{
 				return nullptr;
 			}
-			return RECLASS_MAKE_SHARED(T)(static_cast<T*>(Ctor()), [Dest = Dest](void* Obj)
+			return SharedPtr<T>(static_cast<T*>(Ctor()), [Dest = Dest](T* Obj)
 			{
-				T::RECLASS_STATIC_CLASS_FUNCNAME().GetDest()(Obj);
+				Dest(Obj);
 			});
 		}
 		return nullptr;
@@ -31,14 +31,14 @@
 	template <typename T>
 	UniquePtr<T> Class::CreateUnique() const
 	{
-		return RECLASS_MAKE_UNIQUE(T)(static_cast<T*>(Ctor()), InternalClassDeleter<T>());
+		return RECLASS_MAKE_UNIQUE(T)(static_cast<T*>(Ctor()), InternalClassDeleter<T>(Dest));
 	}
 
 	inline SharedPtr<void> Class::Create() const
 	{
 		if(Ctor && Dest)
 		{
-			return RECLASS_MAKE_SHARED(void)(Ctor(), [Dest = Dest](void* Obj)
+			return SharedPtr<void>(Ctor(), [Dest = Dest](void* Obj)
 			{
 				Dest(Obj);
 			});
