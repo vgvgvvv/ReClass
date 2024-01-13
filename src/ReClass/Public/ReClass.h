@@ -1,275 +1,273 @@
 #pragma once
 #include "ReClassPrefix.h"
+#include "TemplateUtility.h"
 #include "ReClassContext.h"
 
-template<class T>
-struct TypeTag
+namespace ReClassSystem
 {
-	typedef T value;
-};
-template<class T>
-struct ClassTag
-{
-	typedef T value;
-};
-
-namespace ClassDetail
-{
-	static constexpr uint64_t kFNV1aValue = 0xcbf29ce484222325;
-	static constexpr uint64_t kFNV1aPrime = 0x100000001b3;
-
-	inline constexpr uint64_t
-	Hash(char const* const str, uint64_t const value = kFNV1aValue) noexcept
+	template<class T>
+	struct TypeTag
 	{
-		return (str[0] == '\0')
-			   ? value
-			   : Hash(&str[1], (value ^ uint64_t(str[0])) * kFNV1aPrime);
+		typedef T value;
+	};
+	template<class T>
+	struct ClassTag
+	{
+		typedef T value;
+	};
+
+	namespace ClassDetail
+	{
+		static constexpr uint64 kFNV1aValue = 0xcbf29ce484222325;
+		static constexpr uint64 kFNV1aPrime = 0x100000001b3;
+
+		inline constexpr uint64 Hash(char const* const str, uint64_t const value = kFNV1aValue) noexcept
+		{
+			return (str[0] == '\0')
+				   ? value
+				   : Hash(&str[1], (value ^ static_cast<uint64>(str[0])) * kFNV1aPrime);
+		}
 	}
-}
 
 
-class Type;
-
-struct TemplateArgument
-{
-	enum class Tag {
-		Type,
-		Number,
+	enum class EClassFlag
+	{
+		None = 0,
+		Abstruct = 1 << 2,
+		Final = 1 << 3
 	};
 
-	Tag tag;
-	union {
-		Type const* type;
-		uint64_t number;
-	};
-};
+	class Type
+	{
 
-enum class ClassFlag
-{
-	None = 0,
-	Abstruct = 1 << 2
-};
+	public:
+		virtual ~Type() = default;
 
-class Type
-{
-
-public:
-	virtual ~Type() = default;
-
-	Type(
-			int size,
-			char const* name) noexcept
+		Type(int32 size, const char* name) noexcept
 			: TypeSize(size)
 			, TypeHash(ClassDetail::Hash(name))
 			, TypeName(name)
-	{
-
-	}
-
-	virtual bool IsClass() const noexcept { return false; }
-
-	virtual bool IsEnum() const noexcept { return false; }
-
-	virtual bool IsPointer() const noexcept { return false; }
-
-	uint64_t
-	Size() const noexcept
-	{
-		return TypeSize;
-	}
-
-	uint64_t
-	Hash() const noexcept
-	{
-		return TypeHash;
-	}
-
-	char const*
-	Name() const noexcept
-	{
-		return TypeName;
-	}
-
-	bool
-	operator==(Type const& other) const noexcept
-	{
-		return TypeHash == other.TypeHash;
-	}
-
-	bool
-	operator!=(Type const& other) const noexcept
-	{
-		return !(*this == other);
-	}
-
-
-protected:
-	uint64_t TypeSize;
-	uint64_t TypeHash;
-	char const* TypeName;
-};
-
-class ClassStorage;
-
-
-namespace __ClassDetail
-{
-	template<typename T>
-	struct GetClassStorageWrapper
-	{
-		static const ClassStorage* GetClassStorage()
 		{
-			return nullptr;
+
 		}
+
+		RECLASS_NO_DISCARD virtual bool IsClass() const noexcept { return false; }
+		RECLASS_NO_DISCARD virtual bool IsEnum() const noexcept { return false; }
+		RECLASS_NO_DISCARD virtual bool IsPointer() const noexcept { return false; }
+
+		RECLASS_NO_DISCARD uint64 GetSize() const noexcept { return TypeSize; }
+		RECLASS_NO_DISCARD uint64 GetHash() const noexcept { return TypeHash; }
+		RECLASS_NO_DISCARD const char* GetName() const noexcept { return TypeName; }
+		RECLASS_NO_DISCARD bool IsValid() const noexcept { return TypeHash != 0 && TypeSize != 0; }
+
+
+		bool operator==(Type const& other) const noexcept
+		{
+			return TypeHash == other.TypeHash;
+		}
+
+		bool operator!=(Type const& other) const noexcept
+		{
+			return !(*this == other);
+		}
+
+
+	protected:
+		uint64 TypeSize;
+		uint64 TypeHash;
+		const char * TypeName;
 	};
-}
 
-template<typename T>
-const ClassStorage* GetClassStorage()
-{
-	return __ClassDetail::GetClassStorageWrapper<T>::GetClassStorage();
-}
-
-class Class : public Type
-{
-
-public:
-	Class(
-			int InSize,
-			const Class* InBaseClass,
-			char const* InName,
-			std::function<const ClassStorage* ()> InGetClassStorageFunc,
-			ClassFlag InFlag = ClassFlag::None) noexcept
-			: Type(InSize, InName)
-			, BaseClass(InBaseClass)
-			, Flag(InFlag)
-			, GetClassStorageFunc(std::move(InGetClassStorageFunc))
+	inline uint32 GetTypeHash(Type type)
 	{
-		ClassContext::Get().RegisterClassMap(InName, this);
-		Defined = true;
+		return type.GetHash();
 	}
 
-	template<class Lambda>
-	Class(
-			int InSize,
-			const Class* InBaseClass,
-			char const* InName,
-			std::function<const ClassStorage* ()> InGetClassStorageFunc,
-			ClassFlag InFlag,
-			Lambda&& InCtor) noexcept
-			: Type(InSize, InName)
-			, BaseClass(InBaseClass)
-			, Flag(InFlag)
-			, GetClassStorageFunc(std::move(InGetClassStorageFunc))
+	using AddressOffset = Detail::ChooseClass<sizeof(void*) == 8, int64, int32>::Result;
+	using InternalClassInfo = Pair<const Class*, AddressOffset>;
+
+	class Class : public Type
 	{
-		InCtor(this);
-		ClassContext::Get().RegisterClassMap(InName, this);
-		Defined = true;
-	}
+	public:
 
-	virtual bool IsClass() const noexcept override { return true; };
-
-
-	Class const* GetBaseClass() const noexcept
-	{
-		return BaseClass;
-	}
-
-	const ClassStorage* GetClassStorage() const noexcept
-	{
-		return GetClassStorageFunc();
-	}
-
-	bool IsA(const Class* targetClass) const
-	{
-		if(targetClass == nullptr)
+#pragma region Construction
+		Class(
+			int32 InSize,
+			Function<InternalClassInfo()> InBaseClassGetter,
+			const char* InName,
+			EClassFlag InFlag = EClassFlag::None) noexcept
+				: Type(InSize, InName)
+				, GetBaseClassFunc(RECLASS_MOVE(InBaseClassGetter))
+				, ClassFlag(InFlag)
 		{
-			return false;
+			IClassContext::Get().RegisterClassMap(InName, this);
+			bDefined = true;
 		}
-		if(*this == *targetClass)
+
+		template<class Lambda>
+		Class(int InSize
+			, Function<InternalClassInfo()> InBaseClassGetter
+			, const char * InName
+			, EClassFlag InFlag
+			, Lambda&& InCtor) noexcept
+				: Type(InSize, InName)
+				, GetBaseClassFunc(RECLASS_MOVE(InBaseClassGetter))
+				, ClassFlag(InFlag)
 		{
-			return true;
+			InCtor(this);
+			IClassContext::Get().RegisterClassMap(InName, this);
+			bDefined = true;
 		}
-		const auto baseClass = GetBaseClass();
-		if (baseClass == nullptr)
+
+#pragma endregion // Construction
+
+#pragma region ClassInfo
+		RECLASS_NO_DISCARD bool IsClass() const noexcept override { return true; };
+		RECLASS_NO_DISCARD const Class* GetBaseClass() const { return RECLASS_GET_FROM_PAIR(GetBaseClassFunc(), 0); }
+		RECLASS_NO_DISCARD bool HasFlag(EClassFlag InFlag) const { return static_cast<int>(ClassFlag) & static_cast<int>(InFlag); }
+		RECLASS_NO_DISCARD const Function<void(void*)>& GetDest() const { return Dest; }
+		RECLASS_NO_DISCARD const Function<void*()>& GetCtor() const { return Ctor; }
+
+		RECLASS_NO_DISCARD bool Implemented(const Class& Interface) const;
+		RECLASS_NO_DISCARD bool IsA(const Class* targetClass) const;
+		RECLASS_NO_DISCARD bool IsA(const Class& TargetClass) const;
+		RECLASS_NO_DISCARD void* GetInterface(void* InInstance, const Class& InInterfaceClass) const;
+#pragma endregion
+
+#pragma region ClassInit
+		void SetCtorAndDest(Function<void*()>&& InCtor, Function<void(void*)>&& InDest)
 		{
-			return false;
+			RECLASS_CHECK(!bDefined);
+			Ctor = InCtor;
+			Dest = InDest;
 		}
-		return baseClass->IsA(targetClass);
-	}
 
-	bool HasFlag(ClassFlag flag) const
+		void AppendInterface(InternalClassInfo&& InInfo)
+		{
+			RECLASS_CHECK(!bDefined);
+			if (InInfo.first == nullptr)
+			{
+				return;
+			}
+			Interfaces.emplace_back(InInfo);
+		}
+
+#pragma endregion // ClassInit
+
+#pragma region Create Functions
+		RECLASS_NO_DISCARD SharedPtr<void> Create() const;
+		template<typename T>
+		RECLASS_NO_DISCARD SharedPtr<T> Create() const;
+		template<class T>
+		RECLASS_NO_DISCARD T* CreateRaw() const;
+		template<class T>
+		class InternalClassDeleter
+		{
+		public:
+			InternalClassDeleter() = default;
+			void operator()(T* Obj) const
+			{
+				delete T::RECLASS_STATIC_CLASS_FUNCNAME().Dest(Obj);
+			}
+		};
+		template<typename T>
+		UniquePtr<T> CreateUnique() const;
+		template<typename T>
+		static SharedPtr<T> Create(const String& ClassName)
+		{
+			auto cls = IClassContext::Get().GetClass(ClassName);
+			if(!cls)
+			{
+				return nullptr;
+			}
+			return cls->Create<T>();
+		}
+#pragma endregion // Create Functions
+
+		template<typename TSelfClass, typename TInternalClass>
+		InternalClassInfo ToInternalClassInfo()
+		{
+			return InternalClassInfo
+			{
+				&TSelfClass::RECLASS_STATIC_CLASS_FUNCNAME(),
+				reinterpret_cast<AddressOffset>(reinterpret_cast<char const*>(static_cast<TInternalClass*>(reinterpret_cast<TSelfClass*>(1)))) - 1
+			};
+		}
+
+		inline constexpr static InternalClassInfo NullInternalClassInfo{nullptr, -1};
+
+	protected:
+
+		Function<InternalClassInfo()> GetBaseClassFunc;
+		EClassFlag ClassFlag;
+		Function<void*()> Ctor;
+		Function<void(void*)> Dest;
+		bool bDefined;
+		Vector<InternalClassInfo> Interfaces;
+
+	};
+
+	inline uint32 GetTypeHash(Class cls)
 	{
-		return (int)Flag & (int)flag;
+		return cls.GetHash();
 	}
 
-	std::shared_ptr<void> Create() const
+	struct TemplateArgument
 	{
-		return Ctor();
-	}
+		enum class ETag {
+			Type,
+			Number,
+		};
 
-	template<class T>
-	std::shared_ptr<T> Create() const
+		ETag Tag;
+		union {
+			const Type* Type;
+			uint64 Number;
+		};
+	};
+
+	class ClassWithTemplate : public Class
 	{
-		return std::static_pointer_cast<T>(Ctor());
-	}
-
-public:
-
-	void SetCtor(std::function<std::shared_ptr<void>()>&& newCtor)
-	{
-		Ctor = newCtor;
-	}
-
-protected:
-	const Class* BaseClass;
-	ClassFlag Flag;
-	std::function<std::shared_ptr<void>()> Ctor;
-	std::function<const ClassStorage* ()> GetClassStorageFunc;
-	bool Defined;
-};
-
-class ClassTemplate : public Class
-{
-public:
-	ClassTemplate(
-			int InSize,
-			const Class* InBaseClass,
-			char const* Name,
-			std::function<const ClassStorage* ()> InGetClassStorageFunc,
-			ClassFlag Flag,
-			TemplateArgument* TemplateArgs,
-			TemplateArgument* TemplateArgsEnd) noexcept
+	public:
+		ClassWithTemplate(
+		int32 InSize,
+		Function<InternalClassInfo()> InBaseClassGetter,
+		const char* InName,
+		EClassFlag InFlag = EClassFlag::None,
+		TemplateArgument* InTemplateArgs,
+		TemplateArgument* InTemplateArgsEnd)
 			: Class(
-			InSize,
-			InBaseClass,
-			Name,
-			std::move(InGetClassStorageFunc),
-			Flag)
-			, m_templateArgs(TemplateArgs)
-			, m_templateArgsEnd(TemplateArgsEnd)
-	{}
+				InSize,
+				RECLASS_MOVE(InBaseClassGetter),
+				InName,
+				InFlag)
+			, TemplateArgs(InTemplateArgs)
+			, TemplateArgsEnd(InTemplateArgsEnd)
+		{}
 
-	template<class Lambda>
-	ClassTemplate(
-			int size,
-			const Class* baseClass,
-			char const* name,
-			ClassFlag flag,
-			Lambda&& ctor,
-			TemplateArgument* templateArgs,
-			TemplateArgument* templateArgsEnd) noexcept
+		template<class Lambda>
+		ClassWithTemplate(
+			int InSize,
+			Function<InternalClassInfo()> InBaseClassGetter,
+			char const* InName,
+			EClassFlag InFlag,
+			Lambda&& InCtor,
+			TemplateArgument* InTemplateArgs,
+			TemplateArgument* InTemplateArgsEnd)
 			: Class(
-			size,
-			baseClass,
-			name,
-			flag,
-			ctor)
-			, m_templateArgs(templateArgs)
-			, m_templateArgsEnd(templateArgsEnd)
-	{}
+				InSize,
+				RECLASS_MOVE(InBaseClassGetter),
+				InName,
+				InFlag,
+				InCtor)
+			, TemplateArgs(InTemplateArgs)
+			, TemplateArgsEnd(InTemplateArgsEnd)
+		{}
 
-public:
-	TemplateArgument* m_templateArgs;
-	TemplateArgument* m_templateArgsEnd;
-};
+	public:
+		TemplateArgument* TemplateArgs;
+		TemplateArgument* TemplateArgsEnd;
+	};
+
+#include "ReClass/Private/ReClass.Implement.inl"
+}

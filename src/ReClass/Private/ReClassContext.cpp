@@ -3,58 +3,91 @@
 
 #include "ReClassMisc.h"
 
-
-void ClassContext::RegisterClassMap(const std::string& name, Class* type)
+namespace ReClassSystem
 {
-	ClassMap.insert(std::make_pair(name, type));
-}
-
-Class* ClassContext::GetClass(const std::string& name)
-{
-	if(ClassMap.contains(name))
+	class ClassContext : public IClassContext
 	{
-		return ClassMap.at(name);
+	public:
+		void RegisterClassMap(const String& name, Class* type) override;
+		void RegisterTypeMap(const String& name, Type* type) override;
+
+		Class* GetClass(const String& name) override;
+		Class* GetClassByHash(uint64 hash) override;
+		void GetClassOf(const Class* type, Vector<Class*>* out) override;
+		Type* GetType(const String& name) override;
+
+		SharedPtr<void> Create(const String& name) override;
+	private:
+		UnorderedMap<uint64, Class*> ClassMap;
+		UnorderedMap<uint64, Type*> TypeMap;
+	};
+
+	void ClassContext::RegisterClassMap(const String& name, Class* type)
+	{
+		auto hash = ClassDetail::Hash(name.c_str());
+		ClassMap.insert(RECLASS_MAKE_PAIR(hash, type));
 	}
-	return nullptr;
-}
 
-void ClassContext::GetClassOf(const Class* type, std::vector<Class*>* out)
-{
-	for (auto& pair : ClassMap)
+	Class* ClassContext::GetClass(const String& name)
 	{
-		if(ClassLib::IsA(pair.second, type))
+		const auto hash = ClassDetail::Hash(name.c_str());
+		if(ClassMap.contains(hash))
 		{
-			out->push_back(pair.second);
+			return ClassMap.at(hash);
+		}
+		return nullptr;
+	}
+
+	Class* ClassContext::GetClassByHash(uint64 hash)
+	{
+		if(ClassMap.contains(hash))
+		{
+			return ClassMap.at(hash);
+		}
+		return nullptr;
+	}
+
+	void ClassContext::GetClassOf(const Class* type, Vector<Class*>* out)
+	{
+		for (auto& pair : ClassMap)
+		{
+			if(IsA(pair.second, type))
+			{
+				out->push_back(pair.second);
+			}
 		}
 	}
-}
 
-std::shared_ptr<void> ClassContext::Create(const std::string& name)
-{
-	auto type = GetClass(name);
-	if(type)
+	SharedPtr<void> ClassContext::Create(const String& name)
 	{
-		return type->Create();
+		auto type = GetClass(name);
+		if(type)
+		{
+			return type->Create();
+		}
+		return  nullptr;
 	}
-	return  nullptr;
-}
 
-void ClassContext::RegisterTypeMap(const std::string& name, Type* type)
-{
-	TypeMap.insert(std::make_pair(name, type));
-}
-
-Type* ClassContext::GetType(const std::string& name)
-{
-	if (TypeMap.contains(name))
+	void ClassContext::RegisterTypeMap(const String& name, Type* type)
 	{
-		return TypeMap.at(name);
+		auto hash = ClassDetail::Hash(name.c_str());
+		TypeMap.insert(RECLASS_MAKE_PAIR(hash, type));
 	}
-	return GetClass(name);
-}
 
-ClassContext& ClassContext::Get()
-{
-	static ClassContext Instance;
-	return Instance;
+	Type* ClassContext::GetType(const String& name)
+	{
+		auto hash = ClassDetail::Hash(name.c_str());
+		if (TypeMap.contains(hash))
+		{
+			return TypeMap.at(hash);
+		}
+		return GetClass(name);
+	}
+
+	IClassContext& IClassContext::Get()
+	{
+		static ClassContext Instance;
+		return Instance;
+	}
+
 }

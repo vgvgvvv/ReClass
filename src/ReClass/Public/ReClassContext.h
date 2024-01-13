@@ -1,39 +1,32 @@
 #pragma once
-
 #include "ReClassPrefix.h"
 
-class Type;
-class Class;
 
 namespace ReClassSystem
 {
-	class RECLASS_API ClassContext
+	class RECLASS_API IClassContext
 	{
+	protected:
+		virtual ~IClassContext() = default;
 	public:
 
-		static ClassContext& Get();
+		static IClassContext& Get();
 
-		void RegisterClassMap(const std::string& name, Class* type);
+		virtual void RegisterClassMap(const String& name, Class* type) = 0;
+		virtual void RegisterTypeMap(const String& name, Type* type) = 0;
 
-		Class* GetClass(const std::string& name);
+		virtual Class* GetClass(const String& name) = 0;
+		virtual Class* GetClassByHash(uint64 hash) = 0;
+		virtual void GetClassOf(const Class* type, Vector<Class*>* out) = 0;
+		virtual Type* GetType(const String& name) = 0;
 
-		void GetClassOf(const Class* type, std::vector<Class*>* out);
-
-		std::shared_ptr<void> Create(const std::string& name);
-
+		virtual SharedPtr<void> Create(const String& name) = 0;
 		template<class T>
-		std::shared_ptr<T> CreateT(const std::string& name)
+		SharedPtr<T> CreateT(const String& name)
 		{
-			std::shared_ptr<void> result = Create(name);
-			return std::static_pointer_cast<T>(result);
+			SharedPtr<void> result = Create(name);
+			return RECLASS_SHAREDPTR_STATIC_CAST<T>(result);
 		}
 
-		void RegisterTypeMap(const std::string& name, Type* type);
-
-		Type* GetType(const std::string& name);
-
-	private:
-		std::unordered_map<std::string, Class*> ClassMap;
-		std::unordered_map<std::string, Type*> TypeMap;
 	};
 }
