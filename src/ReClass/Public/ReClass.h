@@ -1,7 +1,6 @@
 #pragma once
-#include <cstdint>
-#include <utility>
-#include "ClassContext.h"
+#include "ReClassPrefix.h"
+#include "ReClassContext.h"
 
 template<class T>
 struct TypeTag

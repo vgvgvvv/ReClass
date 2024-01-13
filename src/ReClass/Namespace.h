@@ -1,7 +1,0 @@
-#pragma
-
-class Namespace
-{
-public:
-
-};

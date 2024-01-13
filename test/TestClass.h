@@ -3,7 +3,7 @@
 //
 
 #pragma once
-#include "ReClass/ClassInfo.h"
+#include "..\src\ReClass\Public\ReClassInfo.h"
 
 class TestClass
 {

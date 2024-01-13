@@ -1,6 +1,7 @@
-#include "ClassContext.h"
+#include "ReClassContext.h"
+#include "ReClassPrefix.h"
 
-#include "ClassMisc.h"
+#include "ReClassMisc.h"
 
 
 void ClassContext::RegisterClassMap(const std::string& name, Class* type)

@@ -1,7 +1,7 @@
 #pragma once
-#include "Class.h"
+#include "ReClass.h"
 
-namespace ClassLib
+namespace ReClassSystem
 {
 	inline bool IsA(const Class* self, const Class* targetClass)
 	{
