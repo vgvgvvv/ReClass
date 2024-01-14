@@ -20,6 +20,11 @@ namespace ReClassSystem
 	RECLASS_API extern Type const* GetTypeImpl(TypeTag<unsigned long>) noexcept;
 	RECLASS_API extern Type const* GetTypeImpl(TypeTag<unsigned long long>) noexcept;
 
+#if RECLASS_FOR_UNREAL
+	RECLASS_API extern Type const* GetTypeImpl(TypeTag<FString>) noexcept;
+	RECLASS_API extern Type const* GetTypeImpl(TypeTag<FName>) noexcept;
+#endif
+
 
 	template<typename T>
 	Type const* GetType()
@@ -30,7 +35,7 @@ namespace ReClassSystem
 	template<typename T>
 	Class const * GetClass()
 	{
-		return T::StaticClass();
+		return T::RECLASS_STATIC_CLASS_FUNCNAME();
 	}
 }
 

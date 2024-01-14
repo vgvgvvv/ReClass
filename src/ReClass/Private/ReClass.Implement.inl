@@ -6,7 +6,7 @@
 	{
 		if(Ctor && Dest)
 		{
-			if(!Detail::IsSame<T, void>::value && !IsA(T::RECLASS_STATIC_CLASS_FUNCNAME()))
+			if(!IsSame<T, void>::value && !IsA(T::RECLASS_STATIC_CLASS_FUNCNAME()))
 			{
 				return nullptr;
 			}
@@ -101,7 +101,7 @@
 		{
 			if (InterfaceClass && InterfaceClass->IsA(InInterfaceClass))
 			{
-				return static_cast<uint8*>(InInstance) + Offset;
+				return InterfaceClass->GetInterface(static_cast<uint8*>(InInstance) + Offset, InInterfaceClass);
 			}
 		}
 

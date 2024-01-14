@@ -3,9 +3,19 @@
 //
 
 #pragma once
-#include "..\src\ReClass\Public\ReClassInfo.h"
+#include "ReClassInfo.h"
 
 class TestClass
 {
-	DEFINE_CLASS(TestClass)
+	DECLARE_CLASS(TestClass)
+};
+
+class TestClass2
+{
+	DEFINE_CLASS_DYNAMIC(TestClass2)
+};
+
+class TestClass3 : public TestClass
+{
+	DEFINE_DERIVED_CLASS_DYNAMIC(TestClass3, TestClass)
 };

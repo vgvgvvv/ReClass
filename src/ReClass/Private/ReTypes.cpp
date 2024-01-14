@@ -9,7 +9,7 @@ namespace ReClassSystem
     /* void is special. */
     struct Void : public Type {
         using Type::Type;
-        virtual std::string ToString(void const* instance) const noexcept
+        virtual String ToString(void const* instance) const noexcept
         {
             return "void";
         }
@@ -50,6 +50,44 @@ Type const* GetTypeImpl(TypeTag<T>) noexcept \
     DEFINE_GET_TYPE(unsigned long long, UnsignedLongLong)
 
 #undef DEFINE_GET_TYPE
+
+#if RECLASS_FOR_UNREAL
+    /* FString is special. */
+    struct FStringType : public Type {
+        using Type::Type;
+        virtual String ToString(void const* instance) const noexcept
+        {
+            return *static_cast<const FString*>(instance);
+        }
+        FStringType(int InSize, char const* InName) : Type(InSize, InName)
+        {
+            IClassContext::Get().RegisterTypeMap("FString", this);
+        }
+    };
+    Type const* GetTypeImpl(TypeTag<FString>) noexcept
+    {
+        static FStringType StringType{ 0, "FString" };
+        return &StringType;
+    }
+
+    /* FName is special. */
+    struct FNameType : public Type {
+        using Type::Type;
+        virtual String ToString(void const* instance) const noexcept
+        {
+            return static_cast<const FName*>(instance)->ToString();
+        }
+        FNameType(int InSize, char const* InName) : Type(InSize, InName)
+        {
+            IClassContext::Get().RegisterTypeMap("FName", this);
+        }
+    };
+    Type const* GetTypeImpl(TypeTag<FName>) noexcept
+    {
+        static FNameType NameType{ 0, "FName" };
+        return &NameType;
+    }
+#endif
 
 }
 

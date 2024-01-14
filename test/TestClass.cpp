@@ -4,4 +4,4 @@
 
 #include "TestClass.h"
 
-DEFINE_CLASS_IMP(TestClass)
+DEFINE_CLASS(TestClass)

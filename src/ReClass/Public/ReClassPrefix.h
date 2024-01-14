@@ -9,8 +9,20 @@
 #include <memory>
 #include <cassert>
 #include <unordered_map>
+#include <type_traits>
+#include "ReClass/Private/TemplateUtility.h"
 
 #define RECLASS_API ReClass_API
+
+// build class system for unreal
+#ifndef RECLASS_FOR_UNREAL
+#define RECLASS_FOR_UNREAL 0
+#endif
+
+// support dynamic class
+#ifndef RECLASS_SUPPORT_DYNAMIC_CLASS
+#define RECLASS_SUPPORT_DYNAMIC_CLASS 1
+#endif
 
 #define RE_CLASS(...)
 #define RE_FIELD(...)
@@ -21,6 +33,8 @@
 #define RECLASS_CHECK(CONDITION) assert(CONDITION)
 
 #define RECLASS_STATIC_CLASS_FUNCNAME StaticClass
+#define RECLASS_GET_CLASS_FUNCNAME GetClass
+#define RECLASS_STATIC_CLASS_PTR_FUNCNAME StaticClassPtr
 
 namespace ReClassSystem
 {

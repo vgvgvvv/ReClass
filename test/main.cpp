@@ -6,6 +6,6 @@
 
 int main()
 {
-	std::cout << "hello " << TestClass::StaticClass()->Name() << std::endl;
+	std::cout << "hello " << TestClass::StaticClass().GetName() << std::endl;
 	return 0;
 }

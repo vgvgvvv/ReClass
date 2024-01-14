@@ -43,7 +43,7 @@ namespace ReClassSystem
 	public:
 		virtual ~Type() = default;
 
-		Type(int32 size, const char* name) noexcept
+		Type(uint64 size, const char* name) noexcept
 			: TypeSize(size)
 			, TypeHash(ClassDetail::Hash(name))
 			, TypeName(name)
@@ -54,6 +54,7 @@ namespace ReClassSystem
 		RECLASS_NO_DISCARD virtual bool IsClass() const noexcept { return false; }
 		RECLASS_NO_DISCARD virtual bool IsEnum() const noexcept { return false; }
 		RECLASS_NO_DISCARD virtual bool IsPointer() const noexcept { return false; }
+		RECLASS_NO_DISCARD virtual bool IsRef() const noexcept { return false; }
 
 		RECLASS_NO_DISCARD uint64 GetSize() const noexcept { return TypeSize; }
 		RECLASS_NO_DISCARD uint64 GetHash() const noexcept { return TypeHash; }
@@ -83,6 +84,52 @@ namespace ReClassSystem
 		return type.GetHash();
 	}
 
+	class PointerType : public Type
+	{
+	public:
+		explicit PointerType(const Type* InRawType)
+			: Type(sizeof(int*)
+				, [InRawType]()
+				{
+					const auto bufferLen = strlen(InRawType->GetName()) + 2;
+					const auto buffer = new char[bufferLen];
+					snprintf(buffer, bufferLen, "%s*", InRawType->GetName());
+					return buffer;
+				}())
+			, RawType(InRawType)
+		{
+		}
+
+		RECLASS_NO_DISCARD const Type& GetRawType() const { return *RawType; }
+		RECLASS_NO_DISCARD bool IsPointer() const noexcept override { return true; }
+
+	private:
+		const Type* RawType;
+	};
+
+	class RefType : public Type
+	{
+	public:
+		explicit RefType(Type const* InRawType)
+			: Type(InRawType->GetSize()
+			,[InRawType]()
+				{
+					const auto bufferLen = strlen(InRawType->GetName()) + 2;
+					const auto buffer = new char[bufferLen];
+					snprintf(buffer, bufferLen, "%s&", InRawType->GetName());
+					return buffer;
+				}())
+			, RawType(InRawType)
+		{
+		}
+
+		RECLASS_NO_DISCARD const Type& GetRawType() const { return *RawType; }
+		RECLASS_NO_DISCARD bool IsRef() const noexcept override { return true; }
+
+	private:
+		const Type* RawType;
+	};
+
 	using AddressOffset = Detail::ChooseClass<sizeof(void*) == 8, int64, int32>::Result;
 	using InternalClassInfo = Pair<const Class*, AddressOffset>;
 
@@ -92,11 +139,13 @@ namespace ReClassSystem
 
 #pragma region Construction
 		Class(
-			int32 InSize,
+			uint64 InSize,
 			Function<InternalClassInfo()> InBaseClassGetter,
 			const char* InName,
+			bool InDynamic,
 			EClassFlag InFlag = EClassFlag::None) noexcept
 				: Type(InSize, InName)
+				, bIsDynamic(InDynamic)
 				, GetBaseClassFunc(RECLASS_MOVE(InBaseClassGetter))
 				, ClassFlag(InFlag)
 		{
@@ -105,14 +154,16 @@ namespace ReClassSystem
 		}
 
 		template<class Lambda>
-		Class(int InSize
+		Class(uint64 InSize
 			, Function<InternalClassInfo()> InBaseClassGetter
 			, const char * InName
+			, bool InDynamic
 			, EClassFlag InFlag
 			, Lambda&& InCtor) noexcept
 				: Type(InSize, InName)
 				, GetBaseClassFunc(RECLASS_MOVE(InBaseClassGetter))
 				, ClassFlag(InFlag)
+				, bIsDynamic(InDynamic)
 		{
 			InCtor(this);
 			IClassContext::Get().RegisterClassMap(InName, this);
@@ -191,7 +242,7 @@ namespace ReClassSystem
 #pragma endregion // Create Functions
 
 		template<typename TSelfClass, typename TInternalClass>
-		InternalClassInfo ToInternalClassInfo()
+		static InternalClassInfo ToInternalClassInfo()
 		{
 			return InternalClassInfo
 			{
@@ -209,6 +260,7 @@ namespace ReClassSystem
 		Function<void*()> Ctor;
 		Function<void(void*)> Dest;
 		bool bDefined;
+		bool bIsDynamic;
 		Vector<InternalClassInfo> Interfaces;
 
 	};
@@ -239,6 +291,7 @@ namespace ReClassSystem
 		int32 InSize,
 		Function<InternalClassInfo()> InBaseClassGetter,
 		const char* InName,
+		bool IsDynamic,
 		EClassFlag InFlag,
 		TemplateArgument* InTemplateArgs,
 		TemplateArgument* InTemplateArgsEnd)
@@ -246,6 +299,7 @@ namespace ReClassSystem
 				InSize,
 				RECLASS_MOVE(InBaseClassGetter),
 				InName,
+				IsDynamic,
 				InFlag)
 			, TemplateArgs(InTemplateArgs)
 			, TemplateArgsEnd(InTemplateArgsEnd)
@@ -256,6 +310,7 @@ namespace ReClassSystem
 			int InSize,
 			Function<InternalClassInfo()> InBaseClassGetter,
 			char const* InName,
+			bool IsDynamic,
 			EClassFlag InFlag,
 			Lambda&& InCtor,
 			TemplateArgument* InTemplateArgs,
@@ -264,6 +319,7 @@ namespace ReClassSystem
 				InSize,
 				RECLASS_MOVE(InBaseClassGetter),
 				InName,
+				IsDynamic,
 				InFlag,
 				InCtor)
 			, TemplateArgs(InTemplateArgs)
