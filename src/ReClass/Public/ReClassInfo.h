@@ -3,7 +3,7 @@
 #include "ReClass.h"
 #include "TypeSupport.h"
 
-#include "ReClass/Private/ReClassInfo.Implement.inl"
+#include "..\Private\ReClassInfo.Implement.h"
 
 #define SET_DEFAULT_CLASS_CTOR              RECLASS_SET_DEFAULT_CLASS_CTOR_IMPLEMENT
 #define SET_CLASS_CTOR_DEST                 RECLASS_SET_CLASS_CTOR_DEST_IMPLEMENT

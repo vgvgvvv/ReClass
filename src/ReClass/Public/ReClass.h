@@ -178,7 +178,10 @@ namespace ReClassSystem
 				, GetBaseClassFunc(RECLASS_MOVE(InBaseClassGetter))
 				, ClassFlag(InFlag)
 		{
-			IClassContext::Get().RegisterClassMap(InName, this);
+			if(!bIsDynamic)
+			{
+				IClassContext::Get().RegisterClassMap(InName, this);
+			}
 			bDefined = true;
 		}
 
@@ -195,7 +198,10 @@ namespace ReClassSystem
 				, bIsDynamic(InDynamic)
 		{
 			InCtor(this);
-			IClassContext::Get().RegisterClassMap(InName, this);
+			if(!bIsDynamic)
+			{
+				IClassContext::Get().RegisterClassMap(InName, this);
+			}
 			bDefined = true;
 		}
 
@@ -374,5 +380,5 @@ namespace ReClassSystem
 		TemplateArgument* TemplateArgsEnd;
 	};
 
-#include "ReClass/Private/ReClass.Implement.inl"
+#include "..\Private\ReClass.Implement.h"
 }
