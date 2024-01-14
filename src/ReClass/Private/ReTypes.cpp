@@ -9,7 +9,7 @@ namespace ReClassSystem
     /* void is special. */
     struct Void : public Type {
         using Type::Type;
-        virtual String ToString(void const* instance) const noexcept
+        String ToString(void const* instance) const noexcept override
         {
             return "void";
         }
@@ -23,7 +23,7 @@ namespace ReClassSystem
 #define DEFINE_GET_TYPE(T, NAME) \
 struct NAME : public Type { \
     using Type::Type;  \
-    virtual std::string ToString(void const* instance) const noexcept \
+    String ToString(void const* instance) const noexcept override \
     { \
         return std::to_string(*(T const*)instance); \
     } \
@@ -52,12 +52,18 @@ Type const* GetTypeImpl(TypeTag<T>) noexcept \
 #undef DEFINE_GET_TYPE
 
 #if RECLASS_FOR_UNREAL
+    static String FStringToStdString(const FString& Str)
+    {
+        return String(TCHAR_TO_UTF8(*Str));
+    }
+
     /* FString is special. */
     struct FStringType : public Type {
         using Type::Type;
         virtual String ToString(void const* instance) const noexcept
         {
-            return *static_cast<const FString*>(instance);
+            auto Str = *static_cast<const FString*>(instance);
+            return FStringToStdString(Str);
         }
         FStringType(int InSize, char const* InName) : Type(InSize, InName)
         {
@@ -75,7 +81,8 @@ Type const* GetTypeImpl(TypeTag<T>) noexcept \
         using Type::Type;
         virtual String ToString(void const* instance) const noexcept
         {
-            return static_cast<const FName*>(instance)->ToString();
+            auto Str = static_cast<const FName*>(instance)->ToString();
+            return FStringToStdString(Str);
         }
         FNameType(int InSize, char const* InName) : Type(InSize, InName)
         {

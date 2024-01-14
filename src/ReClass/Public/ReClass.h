@@ -37,10 +37,26 @@ namespace ReClassSystem
 		Final = 1 << 3
 	};
 
-	class Type
+	class RECLASS_API Type
 	{
 
 	public:
+		typedef Type SelfClass;
+		typedef void SuperClass;
+
+		static const Class& RECLASS_STATIC_CLASS_FUNCNAME() { return GetSelfClass(); }
+		virtual const Class& RECLASS_GET_CLASS_FUNCNAME() const { return Type::RECLASS_STATIC_CLASS_FUNCNAME(); }
+		virtual String ToString(void const* instance) const noexcept { return ""; }
+	private:
+		static Class& GetSelfClass();
+	public:
+		Type()
+			: TypeSize(0)
+			, TypeHash(0)
+			, TypeName(nullptr)
+		{
+		}
+
 		virtual ~Type() = default;
 
 		Type(uint64 size, const char* name) noexcept
@@ -84,7 +100,7 @@ namespace ReClassSystem
 		return type.GetHash();
 	}
 
-	class PointerType : public Type
+	class RECLASS_API PointerType : public Type
 	{
 	public:
 		explicit PointerType(const Type* InRawType)
@@ -107,7 +123,7 @@ namespace ReClassSystem
 		const Type* RawType;
 	};
 
-	class RefType : public Type
+	class RECLASS_API RefType : public Type
 	{
 	public:
 		explicit RefType(Type const* InRawType)
@@ -133,11 +149,24 @@ namespace ReClassSystem
 	using AddressOffset = Detail::ChooseClass<sizeof(void*) == 8, int64, int32>::Result;
 	using InternalClassInfo = Pair<const Class*, AddressOffset>;
 
-	class Class : public Type
+	class RECLASS_API Class : public Type
 	{
 	public:
-
+		typedef Class SelfClass;
+		typedef Type SuperClass;
+		static const Class& RECLASS_STATIC_CLASS_FUNCNAME() { return GetSelfClass(); }
+		virtual const Class& RECLASS_GET_CLASS_FUNCNAME() const override  { return Class::RECLASS_STATIC_CLASS_FUNCNAME(); }
+	private:
+		static Class& GetSelfClass();
+	public:
 #pragma region Construction
+		Class()
+			: ClassFlag()
+			, bDefined(false)
+			, bIsDynamic(false)
+		{
+		}
+
 		Class(
 			uint64 InSize,
 			Function<InternalClassInfo()> InBaseClassGetter,
@@ -183,6 +212,20 @@ namespace ReClassSystem
 		RECLASS_NO_DISCARD bool IsA(const Class* targetClass) const;
 		RECLASS_NO_DISCARD bool IsA(const Class& TargetClass) const;
 		RECLASS_NO_DISCARD void* GetInterface(void* InInstance, const Class& InInterfaceClass) const;
+		RECLASS_NO_DISCARD void* GetInterface(void* InInstance, const Class& FromInterfaceClass, const Class& ToInterfaceClass) const;
+		RECLASS_NO_DISCARD const void* GetInterface(const void* InInstance, const Class& FromInterfaceClass, const Class& ToInterfaceClass) const;
+
+		template<typename TInterface, typename FromType>
+		TInterface* GetInterface(FromType* InInstance) const
+		{
+			return static_cast<TInterface*>(GetInterface(InInstance, FromType::RECLASS_STATIC_CLASS_FUNCNAME(), TInterface::RECLASS_STATIC_CLASS_FUNCNAME()));
+		}
+
+		template<typename TInterface, typename FromType>
+		const TInterface* GetInterface(const FromType* InInstance) const
+		{
+			return static_cast<const TInterface*>(GetInterface(InInstance, FromType::RECLASS_STATIC_CLASS_FUNCNAME(), TInterface::RECLASS_STATIC_CLASS_FUNCNAME()));
+		}
 #pragma endregion
 
 #pragma region ClassInit

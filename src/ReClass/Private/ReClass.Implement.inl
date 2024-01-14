@@ -90,26 +90,4 @@
 		return LocalBaseClass->IsA(TargetClass);
 	}
 
-	inline void* Class::GetInterface(void* InInstance, const Class& InInterfaceClass) const
-	{
-		if (InInstance == nullptr)
-		{
-			return nullptr;
-		}
-
-		for (auto& [InterfaceClass, Offset] : Interfaces)
-		{
-			if (InterfaceClass && InterfaceClass->IsA(InInterfaceClass))
-			{
-				return InterfaceClass->GetInterface(static_cast<uint8*>(InInstance) + Offset, InInterfaceClass);
-			}
-		}
-
-		if (const auto [BaseClass, BaseOffset] = GetBaseClassFunc(); BaseClass && BaseOffset >= 0)
-		{
-			return BaseClass->GetInterface(static_cast<uint8*>(InInstance) + BaseOffset, InInterfaceClass);
-		}
-
-		return nullptr;
-	}
 #pragma endregion
