@@ -12,7 +12,13 @@
 #include <type_traits>
 #include "ReClass/Private/TemplateUtility.h"
 
-#define RECLASS_API ReClass_API
+#ifndef RECLASS_API
+    #ifdef ReClass_API
+        #define RECLASS_API ReClass_API
+    #else
+        #define RECLASS_API
+    #endif
+#endif
 
 // build class system for unreal
 #ifndef RECLASS_FOR_UNREAL
