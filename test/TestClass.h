@@ -19,3 +19,8 @@ class TestClass3 : public TestClass
 {
 	DEFINE_DERIVED_CLASS_DYNAMIC(TestClass3, TestClass)
 };
+
+class TestClass4 : public TestClass2
+{
+	DECLARE_DERIVED_CLASS(TestClass4, TestClass2)
+};

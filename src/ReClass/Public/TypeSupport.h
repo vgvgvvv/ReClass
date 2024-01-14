@@ -4,7 +4,7 @@
 #if RECLASS_FOR_UNREAL
 #include "ReClass/Private/TypeSupport.Unreal.inl"
 #endif // RECLASS_FOR_UNREAL
-#include "..\Private\TypeSupport.PureCpp.h"
+#include "ReClass/Private/TypeSupport.PureCpp.h"
 
 namespace ReClassSystem
 {
