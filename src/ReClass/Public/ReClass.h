@@ -295,7 +295,7 @@ namespace ReClassSystem
 		{
 			return InternalClassInfo
 			{
-				&TSelfClass::RECLASS_STATIC_CLASS_FUNCNAME(),
+				&TInternalClass::RECLASS_STATIC_CLASS_FUNCNAME(),
 				reinterpret_cast<AddressOffset>(reinterpret_cast<char const*>(static_cast<TInternalClass*>(reinterpret_cast<TSelfClass*>(1)))) - 1
 			};
 		}
