@@ -15,6 +15,10 @@
 				Dest(Obj);
 			});
 		}
+		else
+		{
+			RECLASS_CHECK(false);
+		}
 		return nullptr;
 	}
 
@@ -25,13 +29,25 @@
 		{
 			return static_cast<T*>(Ctor());
 		}
+		else
+		{
+			RECLASS_CHECK(false);
+		}
 		return nullptr;
 	}
 
 	template <typename T>
 	UniquePtr<T> Class::CreateUnique() const
 	{
-		return RECLASS_MAKE_UNIQUE(T)(static_cast<T*>(Ctor()), InternalClassDeleter<T>(Dest));
+		if(Ctor && Dest)
+		{
+			return RECLASS_MAKE_UNIQUE(T)(static_cast<T*>(Ctor()), InternalClassDeleter<T>(Dest));
+		}
+		else
+		{
+			RECLASS_CHECK(false);
+		}
+		return nullptr;
 	}
 
 	inline SharedPtr<void> Class::Create() const
@@ -42,6 +58,10 @@
 			{
 				Dest(Obj);
 			});
+		}
+		else
+		{
+			RECLASS_CHECK(false);
 		}
 		return nullptr;
 	}
